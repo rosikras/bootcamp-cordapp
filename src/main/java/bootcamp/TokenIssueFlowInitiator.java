@@ -1,12 +1,16 @@
 package bootcamp;
 
 import co.paralleluniverse.fibers.Suspendable;
+import com.google.common.collect.ImmutableList;
 import net.corda.core.flows.*;
 import net.corda.core.identity.Party;
 import net.corda.core.transactions.SignedTransaction;
 import net.corda.core.transactions.TransactionBuilder;
 import net.corda.core.utilities.ProgressTracker;
 import net.corda.core.contracts.CommandData;
+
+import java.security.PublicKey;
+import java.util.List;
 
 import static java.util.Collections.singletonList;
 
@@ -35,19 +39,26 @@ public class TokenIssueFlowInitiator extends FlowLogic<SignedTransaction> {
         Party notary = getServiceHub().getNetworkMapCache().getNotaryIdentities().get(0);
         // We get a reference to our own identity.
         Party issuer = getOurIdentity();
+        // Required signers
+        List<PublicKey> requiredSigners = ImmutableList.of(issuer.getOwningKey(),owner.getOwningKey());
+
 
         /* ============================================================================
          *         TODO 1 - Create our TokenState to represent on-ledger tokens!
          * ===========================================================================*/
         // We create our new TokenState.
-        TokenState tokenState = null;
+        TokenState tokenState = new TokenState(issuer,owner,amount);
+
 
 
         /* ============================================================================
          *      TODO 3 - Build our token issuance transaction to update the ledger!
          * ===========================================================================*/
         // We build our transaction.
-        TransactionBuilder transactionBuilder = null;
+        TransactionBuilder transactionBuilder = new TransactionBuilder();
+        transactionBuilder.setNotary(notary);
+        transactionBuilder.addOutputState(tokenState,"bootcamp.TokenContract");
+        transactionBuilder.addCommand(new TokenContract.Commands.Issue(),requiredSigners);
 
         /* ============================================================================
          *          TODO 2 - Write our TokenContract to control token issuance!
